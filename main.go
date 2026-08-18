@@ -11,19 +11,19 @@ import (
 )
 
 func main(){
-	listener, err := net.Listen("tcp", "1000")
+	listener, err := net.Listen("tcp", ":1000")
 	if err != nil{
-		log.Fatal("Gagal terhubung ke TCP", err)
+		log.Fatal("Gagal terhubung ke TCP: ", err)
 	}
 
 	defer listener.Close()
+	fmt.Println("Server berhasil terhubung ke port 1000")
 
 	for {
 		conn, err := listener.Accept()
 		if err != nil{
 			continue
 		}
-		fmt.Println("Server berhasil terhubung ke port 8080")
 
 		go handleConnection(conn)
 	}
@@ -53,10 +53,10 @@ func handleConnection(conn net.Conn){
 		path = "/index.html"
 	}
 
-	filePath := filepath.Join("public")
+	filePath := filepath.Join("public", filepath.Clean(path))
 	fileData, err := os.ReadFile(filePath)
 	if err != nil{
-		fmt.Printf("File tidak ditemukan: %s", err)
+		log.Printf("File tidak ditemukan: %s", filePath)
 		responseHandler(conn, "404", "text/plain", []byte("<h1>404 Not Found</h1><p>File yang Anda cari tidak ada di server ini.</p>"))
 		return
 	}
@@ -68,8 +68,8 @@ func handleConnection(conn net.Conn){
 func responseHandler(conn net.Conn, status string, contentType string, body []byte){
 	formatHeader := fmt.Sprintf(
 		"HTTP/1.1 %s\r\n"+
-		"Content-Type %s\r\n"+
-		"Content-Length %d\r\n"+
+		"Content-Type: %s\r\n"+
+		"Content-Length: %d\r\n"+
 		"Connection: close\r\n"+
 		"\r\n",
 		status,
@@ -78,7 +78,7 @@ func responseHandler(conn net.Conn, status string, contentType string, body []by
 	)
 
 	conn.Write([]byte(formatHeader))
-	conn.Read(body)
+	conn.Write(body)
 }
 
 func getContentType(contentType string) string{
